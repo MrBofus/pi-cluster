@@ -47,8 +47,11 @@ int mode = 1;
 // initialize file to write primes to
 FILE* primefile;
 
+// initialize buffer to communicate with
+FILE* combuffer;
+
 // function to write primes to file
-void write_primes_to_file(ostringstream& buffer, const char* filename){
+void write_to_file(ostringstream& buffer, const char* filename){
 	ofstream outfile(filename, ios::app);
 	outfile << buffer.str();
 	outfile.close();
@@ -58,106 +61,128 @@ void write_primes_to_file(ostringstream& buffer, const char* filename){
 
 // main loop
 int main(void) {
+	unsigned int chunksize;
+	unsigned int startingint;
+
+	// get chunk size from tasking service
+	cin >> chunksize;
+
+	//````````````````````````````````````````````````````````````````````````````````````````````````````````//
 	// buffer to hold primes before writing them to a file
-	const size_t BUFFER_SIZE = 1;
+	const size_t COUNTER_BUFFER_SIZE = 500;
+	ostringstream counter_buffer;
+
+	const size_t PRIME_BUFFER_SIZE = 1;
 	ostringstream prime_buffer;
 
 	// file name to store prime candidates
 	char* str_lower = NULL;
-	const char* file = ".out/prime_candidates.txt";
+	const char* pfile = ".out/prime_candidates.txt";
+	const char* cfile = ".comms/combuffer.txt";
 
 	// initialize the sieve before anything starts
 	// our sieve will check for 10^8 primes before sending
 	// it to the primality test
-	cout << "building sieve..." << endl;
 	// static const DeepSieve g_sieve(100'000'000ULL);
-	static const DeepSieve g_sieve(1000000);
-	cout << "sieve built" << endl;
+	// static const DeepSieve g_sieve(1000000);
 
-	// get from user the desired number of digits
-	// to test candidates for primality
-	unsigned int val = 0;
-	cout << "number of digits: ";
-	cin >> val;
-
-	// ---- compute m so 2^m has ~val digits ----
-	// log2(10) ≈ 3.3219280948873623
-	const unsigned long m =
-		(unsigned long) floor((val - 1) * 3.3219280948873623);
-
-	cout << "m = " << m << "  (2^m has ~" << val << " digits)\n";
-
-	// random number for k
-	gmp_randstate_t rstate;
-	gmp_randinit_mt(rstate);
-
-	srand((unsigned int)time(0));
-	unsigned long seed = rand()%100000000000;
-
-	gmp_randseed_ui(rstate, seed);
 
 	// initialize values before starting
-	mpz_t n, n_minus, n_plus, step, k_start;
-	mpz_inits(n, n_minus, n_plus, step, k_start, NULL);
+	mpz_t n, step;
+	mpz_inits(n, step, NULL);
 
-	// step = 2^(m+1): what we add to n each time k advances by 2
-	mpz_set_ui(step, 1);
-	mpz_mul_2exp(step, step, m + 1);
+	mpz_set_ui(step, chunksize);
 
-	// Random odd starting k. 64 random bits is plenty of starting
-	// entropy for a single node; on the cluster, the coordinator hands
-	// each worker a disjoint k-range instead.
-	mpz_urandomb(k_start, rstate, 64);
-	mpz_setbit(k_start, 0);                 // force odd
 
-	// n = k_start · 2^m
-	mpz_mul_2exp(n, k_start, m);
-	// n - 1
-	mpz_sub_ui(n_minus, n, 1);
-
-	//`````````````````````````````````````````````````````//
+	//````````````````````````````````````````````````````````````````````````````````````````````````````````//
 
 	// initialize counter and prime number counter
 	unsigned int counter = 0;
+	unsigned int counter_check = 0;
+
 	unsigned int pcounter = 0;
 	unsigned int pcounter_check = 0;
 
 	// begin random search
 	while (true) {
 
-		// check value against sieve to see if it's worth checking
-		while(g_sieve.fails(n_minus)) {
-			// iterate counter
-			counter++;
-			mpz_add_ui(n_minus, n_minus, 1);
-		}
+		cin >> startingint;
+		if (startingint == 12121212) { exit(0); }
+		mpz_set_ui(n, startingint);
 
-		cout << "\r  analyzing candidate #" << counter;
-		cout << " --- total of " << pcounter << " found" << flush;
-
-		if (mpz_probab_prime_p(n_minus, 0)){
-
-			
-			// if it is prime, increment the prime counter
-			pcounter++;
-			pcounter_check++;
-
-			// write prime to text file
-			str_lower = mpz_get_str(NULL, 10, n_minus);
-			prime_buffer << "\n" << str_lower << "\n";
-			if (pcounter_check >= BUFFER_SIZE){
-				write_primes_to_file(prime_buffer, file);
-				pcounter_check = 0;
+		clock_t t_to_start = clock();
+		while ( counter < startingint+chunksize ) {
+			// check value against sieve to see if it's worth checking
+			while( checkLastDigit_mpz_fast(n) ) {
+				// iterate counter
+				counter++;
+				counter_check++;
+				mpz_add_ui(n, n, 1);
 			}
-		}
-		else {}
 
-		// increment candidate by one
-		mpz_add_ui(n_minus, n_minus, 1);
+			if (mpz_probab_prime_p(n, 0)) {
+				// if it exited the g_sieve, the counter didn't increment,
+				// so let's increment it here
+				counter++;
+				counter_check++;
+
+				// if it is prime, increment the prime counter
+				pcounter++;
+				pcounter_check++;
+
+				// write prime to text file
+				str_lower = mpz_get_str(NULL, 10, n);
+				prime_buffer << "\n" << str_lower << "\n";
+				if (pcounter_check >= PRIME_BUFFER_SIZE) {
+					write_to_file(prime_buffer, pfile);
+					pcounter_check = 0;
+				}
+			}
+			else {
+				// if it exited the g_sieve, the counter didn't increment,
+				// so let's increment it here
+				counter++;
+				counter_check++;
+			}
+
+			// write counter to communications buffer so the head node knows what's going on
+			counter_buffer << "\n" << counter << "\n";
+			if (counter_check >= COUNTER_BUFFER_SIZE) {
+				ofstream outfile(cfile);
+				outfile << counter_buffer.str();
+				outfile.close();
+
+				counter_buffer.str("");
+				counter_buffer.clear();
+
+				counter_check = 0;
+			}
+
+			// increment candidate by one
+			mpz_add_ui(n, n, 1);
+		}
+
+		clock_t t_to_end = clock();
+
+		// determine time it took to validate candidate
+		float delta_t = t_to_end - t_to_start;
+		delta_t = delta_t/1000000;
+
+		cout << "took " << delta_t << "s to validate" << endl;
+
+		// make sure to write the final counter when everything is done
+		counter_buffer.str("");
+		counter_buffer.clear();
+		counter_buffer << "\n" << counter << "\t" << delta_t << "\n";
+		ofstream outfile(cfile);
+		outfile << counter_buffer.str();
+		outfile.close();
+
+		counter_buffer.str("");
+		counter_buffer.clear();
 	}
 
 	// (unreachable in practice...)
-	gmp_randclear(rstate);
-	mpz_clears(n, n_minus, n_plus, step, k_start, NULL);
+	mpz_clears(n,step, NULL);
 	return 0;
 }
