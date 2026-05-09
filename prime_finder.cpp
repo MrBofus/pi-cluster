@@ -33,10 +33,12 @@ g++ -O3 -march=native -mtune=native -DNDEBUG \
 #include <iomanip>
 #include <fstream>
 #include <sstream>
+#include <string>
 #include <math.h>
 #include <cstdlib>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 
 #include "prime_functions/prime_functions_fast.h"
 #include "prime_functions/deepSieve/deep_sieve.cpp"
@@ -98,7 +100,7 @@ int main(void) {
 	const unsigned long N_DIGITS = 1000;
 
 	mpz_t base, lower, upper, range;
-	mpz_inits(base, lower, upper, range);
+	mpz_inits(base, lower, upper, range, NULL);
 
 	mpz_ui_pow_ui(lower, 10, N_DIGITS - 1); // 10^49,999
 	mpz_ui_pow_ui(upper, 10, N_DIGITS); 	// 10^50,000
