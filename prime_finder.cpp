@@ -152,14 +152,6 @@ int main(void) {
 
 
 	//````````````````````````````````````````````````````````````````````````````````````````````````````````//
-
-	// initialize counter and prime number counter
-	// unsigned int counter = 0;
-	// unsigned int counter_check = 0;
-
-	unsigned int pcounter = 0;
-	unsigned int pcounter_check = 0;
-
 	// begin random search
 	while (true) {
 		string offset_str;
@@ -172,6 +164,9 @@ int main(void) {
 
 		// n = base + offset
 		mpz_add(n, base, offset);
+
+		unsigned int pcounter = 0;
+		unsigned int pcounter_check = 0;
 
 		unsigned int counter = 0;
 		unsigned int counter_check = 0;
