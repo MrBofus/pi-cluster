@@ -39,6 +39,7 @@ g++ -O3 -march=native -mtune=native -DNDEBUG \
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <thread>
 
 #include "prime_functions/prime_functions_fast.h"
 #include "prime_functions/deepSieve/deep_sieve.cpp"
@@ -70,8 +71,27 @@ void write_counter(ostringstream& buffer, const char* filename){
 	buffer.clear();
 }
 
+void led_init() {
+	ofstream trigger("/sys/class/leds/ACT/trigger");
+	if (trigger) trigger << "none";
+}
+
+void led_set(bool on) {
+	ofstream brightness("/sys/class/leds/ACT/brightness");
+	if (brightness) brightness << (on ? "1" : "0");
+}
+
+void led_blink() {
+	using namespace chrono;
+	led_set(false); this_thread::sleep_for(milliseconds(80));
+	led_set(true);
+}
+
 // main loop
 int main(void) {
+	led_init();
+	led_set(true);
+
 	unsigned int chunksize;
 	unsigned int startingint;
 
@@ -97,7 +117,7 @@ int main(void) {
 
 	//```````````````````````````````````````````````````````````````````````````````````````````````````````//
 	// initialize the number
-	const unsigned long N_DIGITS = 1000;
+	const unsigned long N_DIGITS = 50000;
 
 	mpz_t base, lower, upper, range;
 	mpz_inits(base, lower, upper, range, NULL);
@@ -189,6 +209,8 @@ int main(void) {
 
 				mpz_add_ui(n, n, 1);
 			}
+
+			led_blink();
 
 			if (mpz_probab_prime_p(n, 0)) {
 				// if it exited the g_sieve, the counter didn't increment,
