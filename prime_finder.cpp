@@ -97,7 +97,7 @@ int main(void) {
 
 	//```````````````````````````````````````````````````````````````````````````````````````````````````````//
 	// initialize the number
-	const unsigned long N_DIGITS = 1000;
+	const unsigned long N_DIGITS = 50000;
 
 	mpz_t base, lower, upper, range;
 	mpz_inits(base, lower, upper, range, NULL);
