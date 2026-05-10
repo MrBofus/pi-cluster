@@ -89,8 +89,8 @@ void led_blink() {
 
 // main loop
 int main(void) {
-	led_init();
-	led_set(true);
+	// led_init();
+	// led_set(true);
 
 	unsigned int chunksize;
 	unsigned int startingint;
@@ -117,7 +117,7 @@ int main(void) {
 
 	//```````````````````````````````````````````````````````````````````````````````````````````````````````//
 	// initialize the number
-	const unsigned long N_DIGITS = 50000;
+	const unsigned long N_DIGITS = 1000;
 
 	mpz_t base, lower, upper, range;
 	mpz_inits(base, lower, upper, range, NULL);
@@ -210,7 +210,7 @@ int main(void) {
 				mpz_add_ui(n, n, 1);
 			}
 
-			led_blink();
+			// led_blink();
 
 			if (mpz_probab_prime_p(n, 0)) {
 				// if it exited the g_sieve, the counter didn't increment,
