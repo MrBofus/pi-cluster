@@ -203,6 +203,7 @@ int main(void) {
 				// write prime to text file
 				str_lower = mpz_get_str(NULL, 10, n);
 				prime_buffer << "\n" << str_lower << "\n";
+				cout << "prime: " << str_lower << "\n";
 				free(str_lower);
 				if (pcounter_check >= PRIME_BUFFER_SIZE) {
 					write_to_file(prime_buffer, pfile);
