@@ -205,6 +205,10 @@ int main(void) {
 				counter++;
 				counter_check++;
 
+				if (counter % 10 == 0) { cout << "progress: " << counter << "/" << chunksize << "\n";
+					cout.flush();
+				}
+
 				if (counter >= chunksize) { break; }
 
 				mpz_add_ui(n, n, 1);
