@@ -117,7 +117,7 @@ int main(void) {
 
 	//```````````````````````````````````````````````````````````````````````````````````````````````````````//
 	// initialize the number
-	const unsigned long N_DIGITS = 150000;
+	const unsigned long N_DIGITS = 100000;
 
 	mpz_t base, lower, upper, range;
 	mpz_inits(base, lower, upper, range, NULL);
@@ -163,7 +163,7 @@ int main(void) {
 	// our sieve will check for 10^8 primes before sending
 	// it to the primality test
 	// static const DeepSieve g_sieve(100'000'000ULL);
-	// static const DeepSieve g_sieve(1000000);
+	static const DeepSieve g_sieve(1000000);
 
 
 	// initialize values before starting
@@ -200,7 +200,8 @@ int main(void) {
 		while ( counter <= chunksize ) {
 
 			// check value against sieve to see if it's worth checking
-			while( checkLastDigit_mpz_fast(n) ) {
+			// while( checkLastDigit_mpz_fast(n) ) {
+			while( g_sieve.fails(n) ) {
 				// iterate counter
 				counter++;
 				counter_check++;
